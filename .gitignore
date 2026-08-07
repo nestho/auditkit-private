@@ -11,3 +11,4 @@ reports/
 
 keys/
 *.lic
+.auditkit/

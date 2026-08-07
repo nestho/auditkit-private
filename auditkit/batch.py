@@ -50,7 +50,11 @@ def annotate_result_with_target(result: ScanResult) -> ScanResult:
     return result
 
 
-def scan_targets(targets: List[str], enable_http: bool = False) -> BatchReport:
+def scan_targets(
+    targets: List[str],
+    enable_http: bool = False,
+    enable_scoring: bool = True,
+) -> BatchReport:
     report = BatchReport(
         started_at=utcnow(),
         targets=list(targets),
@@ -69,7 +73,9 @@ def scan_targets(targets: List[str], enable_http: bool = False) -> BatchReport:
             result.facts["http"] = metadata
             result.findings.extend(http_findings_from_metadata(metadata))
 
-        result = score_scan_result(result)
+        if enable_scoring:
+            result = score_scan_result(result)
+
         result.finished_at = utcnow()
         result = annotate_result_with_target(result)
 

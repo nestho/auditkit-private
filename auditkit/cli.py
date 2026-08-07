@@ -7,6 +7,7 @@ from pathlib import Path
 
 from . import __version__
 from .batch import read_targets_file, scan_targets
+from .license import gate
 from .license.offline import (
     generate_keypair,
     issue_license_token,
@@ -34,6 +35,12 @@ def default_batch_out(report_format: str) -> Path:
 
 
 def cmd_scan(args):
+    if args.http:
+        gate.ensure_feature("http")
+
+    if args.format == "html":
+        gate.ensure_feature("html")
+
     result = scan_domain(args.target)
 
     if args.http:
@@ -47,7 +54,8 @@ def cmd_scan(args):
         result.findings.extend(http_findings_from_metadata(metadata))
         result.finished_at = datetime.now(timezone.utc).isoformat()
 
-    result = score_scan_result(result)
+    if gate.can_use_feature("scoring"):
+        result = score_scan_result(result)
 
     out = Path(args.out)
 
@@ -63,6 +71,11 @@ def cmd_scan(args):
 
 
 def cmd_batch(args):
+    gate.ensure_feature("batch")
+
+    if args.http:
+        gate.ensure_feature("http")
+
     targets_path = Path(args.targets_file)
 
     if not targets_path.exists():
@@ -75,7 +88,13 @@ def cmd_batch(args):
         print(f"No valid targets found in: {targets_path}")
         return 1
 
-    report = scan_targets(targets, enable_http=args.http)
+    enable_scoring = gate.can_use_feature("scoring")
+
+    report = scan_targets(
+        targets,
+        enable_http=args.http,
+        enable_scoring=enable_scoring,
+    )
 
     if args.out:
         out = Path(args.out)
@@ -182,6 +201,72 @@ def cmd_license_verify(args):
         return 1
 
     result = verify_license_token(token, public_pem)
+
+    print(f"Valid: {result.is_valid}")
+    print(f"Reason: {result.reason}")
+    print(f"Tier: {result.tier}")
+
+    if result.features:
+        print(f"Features: {', '.join(result.features)}")
+    else:
+        print("Features: none")
+
+    return 0 if result.is_valid else 1
+
+
+def cmd_license_activate(args):
+    if args.license_token:
+        token = args.license_token.strip()
+    elif args.license_file:
+        license_path = Path(args.license_file)
+
+        if not license_path.exists():
+            print(f"License file not found: {license_path}")
+            return 1
+
+        token = license_path.read_text(encoding="utf-8").strip()
+    else:
+        print("Provide --license-token or --license-file")
+        return 1
+
+    public_path = Path(args.public_key)
+
+    if not public_path.exists():
+        print(f"Public key not found: {public_path}")
+        return 1
+
+    public_pem = public_path.read_text(encoding="utf-8")
+
+    result = verify_license_token(token, public_pem)
+
+    if not result.is_valid:
+        print(f"License activation failed: {result.reason}")
+        return 1
+
+    gate.LOCAL_DIR.mkdir(parents=True, exist_ok=True)
+
+    gate.LICENSE_FILE.write_text(token + "\n", encoding="utf-8")
+    gate.PUBLIC_KEY_FILE.write_text(public_pem, encoding="utf-8")
+
+    os.chmod(gate.LICENSE_FILE, 0o600)
+
+    gate.reset_license_cache()
+
+    print("License activated.")
+    print(f"License file: {gate.LICENSE_FILE}")
+    print(f"Public key file: {gate.PUBLIC_KEY_FILE}")
+    print(f"Tier: {result.tier}")
+
+    if result.features:
+        print(f"Features: {', '.join(result.features)}")
+    else:
+        print("Features: none")
+
+    return 0
+
+
+def cmd_license_status(args):
+    result = gate.get_license_status(force=True)
 
     print(f"Valid: {result.is_valid}")
     print(f"Reason: {result.reason}")
@@ -338,8 +423,40 @@ def main():
     )
     verify.set_defaults(func=cmd_license_verify)
 
+    activate = license_subparsers.add_parser(
+        "activate",
+        help="Activate a license for local use",
+    )
+    activate.add_argument(
+        "--license-token",
+        default="",
+        help="License token string",
+    )
+    activate.add_argument(
+        "--license-file",
+        default="",
+        help="Path to license token file",
+    )
+    activate.add_argument(
+        "--public-key",
+        required=True,
+        help="Path to public key PEM file",
+    )
+    activate.set_defaults(func=cmd_license_activate)
+
+    status = license_subparsers.add_parser(
+        "status",
+        help="Show current license status",
+    )
+    status.set_defaults(func=cmd_license_status)
+
     args = parser.parse_args()
-    return args.func(args)
+
+    try:
+        return args.func(args)
+    except gate.LicenseFeatureError as exc:
+        print(str(exc))
+        return 1
 
 
 if __name__ == "__main__":
