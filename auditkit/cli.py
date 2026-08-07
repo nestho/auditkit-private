@@ -1,18 +1,34 @@
 import argparse
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 from . import __version__
 from .report import write_json, write_markdown
+from .report_html import write_html
 from .scanners.passive import scan_domain
 
 
 def cmd_scan(args):
     result = scan_domain(args.target)
+
+    if args.http:
+        from .scanners.http_metadata import (
+            http_findings_from_metadata,
+            scan_http_metadata,
+        )
+
+        metadata = scan_http_metadata(args.target)
+        result.facts["http"] = metadata
+        result.findings.extend(http_findings_from_metadata(metadata))
+        result.finished_at = datetime.now(timezone.utc).isoformat()
+
     out = Path(args.out)
 
     if args.format == "json":
         write_json(result, out)
+    elif args.format == "html":
+        write_html(result, out)
     else:
         write_markdown(result, out)
 
@@ -48,9 +64,14 @@ def main():
     )
     scan.add_argument(
         "--format",
-        choices=["md", "json"],
+        choices=["md", "json", "html"],
         default="md",
         help="Report format",
+    )
+    scan.add_argument(
+        "--http",
+        action="store_true",
+        help="Enable authorized HTTP metadata checks",
     )
     scan.set_defaults(func=cmd_scan)
 
