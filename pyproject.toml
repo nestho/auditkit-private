@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "auditkit"
+version = "0.1.0"
+description = "Authorized attack-surface audit reporting MVP"
+requires-python = ">=3.9"
+
+[project.scripts]
+auditkit = "auditkit.cli:main"
+
+[tool.setuptools]
+packages = ["auditkit", "auditkit.scanners"]
