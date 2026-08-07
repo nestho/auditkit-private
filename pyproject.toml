@@ -4,11 +4,17 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "auditkit"
-version = "0.2.0"
-description = "Authorized attack-surface audit reporting MVP with offline licensing"
+version = "0.3.0"
+description = "Authorized attack-surface audit reporting toolkit"
+readme = "README.md"
 requires-python = ">=3.9"
+license = {file = "LICENSE.txt"}
 dependencies = [
     "cryptography>=42",
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
 ]
 
 [project.scripts]
