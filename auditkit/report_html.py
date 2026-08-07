@@ -95,6 +95,18 @@ def to_html(result: ScanResult) -> str:
 
     if result.findings:
         for finding in result.findings:
+            score = getattr(finding, "score", 0.0)
+            impact = getattr(finding, "impact", "")
+            likelihood = getattr(finding, "likelihood", "")
+
+            score_meta = [f"Score: {score}"]
+
+            if impact:
+                score_meta.append(f"Impact: {impact}")
+
+            if likelihood:
+                score_meta.append(f"Likelihood: {likelihood}")
+
             parts.append("<section class='finding'>")
 
             parts.append("<h2>")
@@ -107,7 +119,11 @@ def to_html(result: ScanResult) -> str:
             parts.append(f"<code>{html.escape(finding.id)}</code>")
             parts.append("</h2>")
 
-            parts.append(f"<div class='muted'>Category: {html.escape(finding.category)}</div>")
+            parts.append(
+                f"<div class='muted'>Category: {html.escape(finding.category)} | "
+                f"{html.escape(' | '.join(score_meta))}</div>"
+            )
+
             parts.append(f"<p>{html.escape(finding.detail)}</p>")
 
             if finding.recommendation:

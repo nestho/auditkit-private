@@ -20,9 +20,22 @@ def to_markdown(result: ScanResult) -> str:
         lines.append("No findings.")
 
     for finding in result.findings:
+        score = getattr(finding, "score", 0.0)
+        impact = getattr(finding, "impact", "")
+        likelihood = getattr(finding, "likelihood", "")
+
         lines.append(
             f"### [{finding.severity.upper()}] {finding.title} (`{finding.id}`)"
         )
+        lines.append("")
+        lines.append(f"- Score: {score}")
+
+        if impact:
+            lines.append(f"- Impact: {impact}")
+
+        if likelihood:
+            lines.append(f"- Likelihood: {likelihood}")
+
         lines.append("")
         lines.append(finding.detail)
 

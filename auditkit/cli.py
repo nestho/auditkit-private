@@ -7,6 +7,7 @@ from . import __version__
 from .report import write_json, write_markdown
 from .report_html import write_html
 from .scanners.passive import scan_domain
+from .scoring import score_scan_result
 
 
 def cmd_scan(args):
@@ -22,6 +23,8 @@ def cmd_scan(args):
         result.facts["http"] = metadata
         result.findings.extend(http_findings_from_metadata(metadata))
         result.finished_at = datetime.now(timezone.utc).isoformat()
+
+    result = score_scan_result(result)
 
     out = Path(args.out)
 

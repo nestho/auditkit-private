@@ -17,6 +17,9 @@ class Finding:
     detail: str
     evidence: Dict = field(default_factory=dict)
     recommendation: str = ""
+    impact: str = ""
+    likelihood: str = ""
+    score: float = 0.0
 
 
 @dataclass
