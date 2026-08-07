@@ -8,3 +8,6 @@ build/
 reports/
 .env
 .DS_Store
+
+keys/
+*.lic

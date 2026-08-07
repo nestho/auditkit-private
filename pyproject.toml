@@ -4,12 +4,19 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "auditkit"
-version = "0.1.0"
-description = "Authorized attack-surface audit reporting MVP"
+version = "0.2.0"
+description = "Authorized attack-surface audit reporting MVP with offline licensing"
 requires-python = ">=3.9"
+dependencies = [
+    "cryptography>=42",
+]
 
 [project.scripts]
 auditkit = "auditkit.cli:main"
 
 [tool.setuptools]
-packages = ["auditkit", "auditkit.scanners"]
+packages = [
+    "auditkit",
+    "auditkit.scanners",
+    "auditkit.license",
+]
