@@ -32,3 +32,16 @@ class ScanResult:
 
     def to_dict(self) -> Dict:
         return asdict(self)
+
+
+@dataclass
+class BatchReport:
+    started_at: str
+    finished_at: str = ""
+    targets: List[str] = field(default_factory=list)
+    results: List[ScanResult] = field(default_factory=list)
+    findings: List[Finding] = field(default_factory=list)
+    facts: Dict = field(default_factory=dict)
+
+    def to_dict(self) -> Dict:
+        return asdict(self)
