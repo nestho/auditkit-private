@@ -12,3 +12,4 @@ reports/
 keys/
 *.lic
 .auditkit/
+*.spec
